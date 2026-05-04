@@ -19,12 +19,14 @@ import { generateQR, pollQRStatus, passwordLogin, PLATFORM_NAMES, QR_PLATFORMS, 
 import { assessAllSources } from './core/credential-risk';
 import { generateTokenJson } from './core/credential-injector';
 import type { TVBoxConfig, SearchQuotaConfig, CloudPlatform, CloudCredential } from './core/types';
+import { mountChannelProbeRoutes } from './routes/channel-probe-admin';
 
 export interface AppDeps {
   storage: Storage;
   config: AppConfig;
   triggerRefresh: () => Promise<void>;
   onCronIntervalChange?: (intervalMinutes: number) => void;
+  enableChannelProbe?: boolean; // 仅 Node/Docker 入口启用
 }
 
 export function createApp(deps: AppDeps): Hono {
@@ -1306,6 +1308,11 @@ export function createApp(deps: AppDeps): Hono {
       return c.json({ success: false, error: msg }, 500);
     }
   });
+
+  // 频道级测速 admin 路由（仅 Node/Docker 启用）
+  if (deps.enableChannelProbe) {
+    mountChannelProbeRoutes(app, { storage, config });
+  }
 
   return app;
 }
